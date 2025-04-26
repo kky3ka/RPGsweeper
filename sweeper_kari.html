@@ -7,161 +7,396 @@
 		<meta http-equiv="content-type" charset="UTF-8">
 		<meta name="twitter:card" content="summary" />
 		<meta name="twitter:site" content="@kky3ka" />
-		<meta property="og:url" content="https://3ka.me/tools/okureru.php" />
-		<meta property="og:title" content="ふぁじいすいーぱー（仮）" />
-		<meta property="og:description" content="マインスイーパー的な何か" />    
-        <title>ふぁじいすいーぱー（仮）</title>
+		<meta property="og:url" content="https://3ka.me/tools/sweeper_kari2.html" />
+		<meta property="og:title" content="ふぁじいすいーぱー（仮）～新米スイーパーの冒険編～" />
+		<meta property="og:description" content="一人称マインスイーパー的な何か" />
+        <style>
+            .controller{
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                width: 360px;
+            }
+            .controller div{
+                background-color: azure;
+                text-align: center;
+            }
+            .controller button{
+                border-color: aqua;
+                border: 2px solid;
+                background-color: white;
+                height: 3em;
+                border-radius: 0.5em;
+            }
+        </style>
+        <title>ふぁじいすいーぱー（仮） ～新米スイーパーの冒険編～</title>
     </head>
     <body>
         <div>
-            <h1>ふぁじいすいーぱー（仮）</h1>
+            <h1>ふぁじいすいーぱー（仮）～新米スイーパーの冒険編～</h1>
             <p>
-            一日で作ったマインスイーパー的ななにか。<br>
-            普通のマインスイーパーと異なるのは、隣接している地雷の数が見えず、マスの色で危険度が表示されています。<br>
-            完全に安全なエリアは黄緑色で、他の色のマスには近くに地雷がある可能性があります。<br>
-            赤色など危険そうな色のマスほど近くに強い地雷が潜んでいます。<br>
-            HPが無くなるまでに地雷以外の全マス開けられたらゲームクリアだと思ってください。
+            新米スイーパーになったあなたは地雷だらけのフィールドでの調査を命じられる……。あなたは満足のいく調査結果を持って生還することはできるか！？<br>
+            一日で作った例のマインスイーパーがまさかの一人称（？）風のマインスイーパーに大改造されてパワーアップ！！！（多分）<br>
+            <br>
+            青のマス＝あなた。キーボード、ページ下部の上下左右キーで操作できる。<br>
+            薄緑色マス＝安全なマス<br>
+            ピンク＜オレンジ＜赤の順で危険な地雷が周囲に潜んでいる。<br>
+            黒＝地雷マス<br>
+            緑色＝拠点。一定以上の調査進捗を持った状態で触れるとゴール。
             </p>
-            <canvas id="canvas"></canvas>
             <div>
-                <div id="score"></div>
                 <div id="HP"></div>
+                <div id="progress"></div>
+            </div>
+            <canvas id="canvas"></canvas>
+            <div class="controller">
+                <div></div>
+                <button type="button" name="UP" value="UP" onclick="pushdisplaybutton(this.value)">↑</button>
+                <div></div>
+                <button type="button" name="LEFT" value="LEFT" onclick="pushdisplaybutton(this.value)">←</button>
+                <div></div>
+                <button type="button" name="RIGHT" value="RIGHT" onclick="pushdisplaybutton(this.value)">→</button>
+                <div></div>
+                <button type="button" name="DOWN" value="DOWN" onclick="pushdisplaybutton(this.value)">↓</button>
+                <div></div>
             </div>
         </div>
         <script>
-            var score = 0;
-            var hp = 500;
 
-            let map_mine = map_genelate({x: 15, y: 24}, 30, {max:70, min:10});
-            let map_distribution = map_genelate_distribution(map_mine);
-            UIdraw(map_distribution, map_mine);
-
-            function map_genelate(map_size, event, difficulity_range){
-                // マップを生成
-                // 引数：マップの広さ（二次元配列のサイズ）、マップ内のイベント数、危険度幅
-                // 戻り値：生成されたマップ
-                let map_array = new Array(map_size.y);
-                for(let i = 0; i < map_array.length; i++){
-                    map_array[i] = new Array(map_size.x).fill(0);
+            class Character {
+                constructor(name, max_hp) {
+                    this.name = name;
+                    this.hp = max_hp;
                 }
-
-                for(let i = 0;  i < event; i++){
-                    let row = Math.floor(Math.random() * (map_size.x));
-                    let col = Math.floor(Math.random() * (map_size.y));
-                    map_array[col][row] = Math.floor(Math.random() * (difficulity_range.max - difficulity_range.min)) + difficulity_range.min;
-                    //console.log("{" + x +","+ y + "}:" + map_array[x][y]);
-                }
-                return map_array;
             }
 
-            function map_genelate_distribution(map_miner){
-                // 引数：エネミーマップ
-                // 戻り値：危険度分布
-                let map_row = map_miner[0].length;
-                let map_col = map_miner.length;
-
-                let map_distribution = new Array(map_col);
-                for(let i = 0; i < map_distribution.length; i++){
-                    map_distribution[i] = new Array(map_row).fill(0);
-                }
-
-                // マスの危険度決定
-                for(var y = 0; y < map_col; y++){
-                    for(var x = 0; x < map_row; x++){
-                        map_distribution[y][x] = map_calc_dangerlate(map_miner, x, y);
+            class Map {
+                genelate_list(map_size, event, difficulity_range){
+                    // 引数：マップの広さ（二次元配列のサイズ）、マップ内のイベント数、危険度幅
+                    // 戻り値：敵出現位置リスト
+                    let map_array = new Array(event);
+                    
+                    for(let i = 0;  i < event; i++){
+                        let x = Math.floor(Math.random() * (map_size.x));
+                        let y = Math.floor(Math.random() * (map_size.y));
+                        let danger = Math.floor(Math.random() * (difficulity_range.max - difficulity_range.min)) + difficulity_range.min;
+                        map_array[i] = {x:x, y:y, danger:danger};
                     }
+                    return map_array;
+                }
+                genelate_distribution(map_size, map_miner){
+                    // 引数：エネミーマップ
+                    // 戻り値：危険度分布
+                    let map_distribution = this.map_init(map_size);
+
+                    // マスの危険度決定
+                    map_distribution = this.calc_dangerlate(map_distribution, map_miner, 2);
+                    map_distribution = this.calc_dangerlate(map_distribution, map_miner);
+
+                    return map_distribution;
                 }
 
-                return map_distribution;
-            }
+                calc_dangerlate(board, miner, field=1){
+                    let events_count = miner.length - 1;
+                    while( events_count >= 0){
+                        let x = miner[events_count].x;
+                        let y = miner[events_count].y;
+                        let danger = miner[events_count].danger;
 
-            function map_calc_dangerlate(board, x, y){
-                let count = 0;
-                let dangerlate = 0;
-
-                for (let i = Math.max(y-1, 0); i < Math.min(y+2, board.length); i++) {
-                    for (let j = Math.max(x-1, 0); j < Math.min(x+2, board[0].length); j++) {
-                        if (board[i][j] > 0) {
-                            count += 1;
-                            dangerlate += board[i][j];
+                        for (let i = Math.max(y-field, 0); i < Math.min(y+(field + 1), board.length); i++) {
+                            for (let j = Math.max(x-field, 0); j < Math.min(x+(field + 1), board[0].length); j++) {
+                                board[i][j] = board[i][j] + (danger / (field * 2));
+                            }
                         }
+                        events_count--;
                     }
+                    return board;
                 }
-                if(count >= 2){
-                    dangerlate = Math.floor(dangerlate / count);
+
+                set_random_point (map_size, mine_list){
+                    // 位置をランダムに決定　地雷のある場所は選ばれない
+                    let x, y;
+                    do {
+                        x = Math.floor(Math.random() * (map_size.x));
+                        y = Math.floor(Math.random() * (map_size.y));
+
+                        var res = mine_list.some(function(value, index, array){
+                            return (value.x === x && value.y === y);
+                        });
+                    } while(res == true);
+                    
+                    return {x:x, y:y};
                 }
-                return dangerlate;
+
+                set_goal_point (map_size, mine_list, start_point){
+                    // ゴール位置を決定　スタート位置と地雷のある場所は選ばれない
+                    let goal;
+                    do {
+                        goal = this.set_random_point(map_size, mine_list);
+                    }while(start_point.x == goal.x && start_point.y == goal.y);
+
+                    return goal;
+                }
+
+                map_init(map_size){
+                    // 空状態のマップを作成
+                    let map_row = map_size.x;
+                    let map_col = map_size.y;
+
+                    let map_emp = new Array(map_col);
+                    for(let i = 0; i < map_emp.length; i++){
+                        map_emp[i] = new Array(map_row).fill(0);
+                    }
+                    return map_emp;
+                }
+
+                constructor(map_size, event, difficulity_range){
+                    this.size = map_size;
+                    this.mine_list = this.genelate_list(this.size, event, difficulity_range);
+                    this.distribution = this.genelate_distribution(this.size, this.mine_list);
+                    this.start = this.set_random_point(this.size, this.mine_list);
+                    this.goal = this.set_goal_point(this.size, this.mine_list, this.start);
+                }
             }
 
-            function UIdraw(arr, mine){
+            class GameManagement{
+                constructor(player, map, sceneflag = 1){
+                    this.player_info = player;
+                    this.map = map;
+                    this.player_position = map.start;
+                    this.sceneflag = sceneflag;
+                    this.player_checked_map = 1;
+                    this.player_passed_map = this.map.map_init(this.map.size);
+                }
+
+                gameprogress(){
+                    let mapsize = this.map.size.x * this.map.size.y;
+                    
+                    return Math.round(this.player_checked_map / mapsize * 100) ;
+                }
+
+                map_passed(player_position){
+                    if(this.player_passed_map[player_position.y][player_position.x] != 1){
+                        this.player_passed_map[player_position.y][player_position.x] = 1;
+                        this.player_checked_map++;
+                    }
+                }
+
+                Move_Up(){
+                    this.player_position.y -= 1;
+                    if(0 > this.player_position.y){
+                        this.player_position.y = 0;
+                    }
+                }
+                Move_Down(){
+                    this.player_position.y += 1;
+                    if(map.size.y - 1 < this.player_position.y){
+                        this.player_position.y = map.size.y - 1;
+                    }
+                }
+                Move_Left(){
+                    this.player_position.x -= 1;
+                    if(0 > this.player_position.x){
+                        this.player_position.x = 0;
+                    }
+                }
+                Move_Right(){
+                    this.player_position.x += 1;
+                    if(map.size.x - 1 < this.player_position.x){
+                        this.player_position.x = map.size.x - 1;
+                    }
+                }
+            }
+
+            var player = new Character(name, 500);
+            var map = new Map({x: 15, y: 24}, 30, {max:70, min:10});
+            var gameManagement = new GameManagement(player, map, 1);
+
+            UIdraw(gameManagement);
+            Mapdraw(gameManagement);
+
+            function Move_ivent_before(gameManagement){
+                //移動指示時に発生する内部処理
+                gameManagement.map_passed(gameManagement.player_position);
+            }
+
+            function Move_ivent_after(gameManagement){
+                let gm = gameManagement;
+                // 移動終了後に発生する内部処理
+                if(gm.map.goal.x == gm.player_position.x && gm.map.goal.y == gm.player_position.y && gm.gameprogress() > 80){
+                    alert("あなたは十分な調査結果を持って生還することに成功した。次の任務も期待されているぞ……");
+                }else if(gm.map.goal.x == gm.player_position.x && gm.map.goal.y == gm.player_position.y){
+                    alert("調査結果が足りないと怒られてしまった。もう少し探索してみよう……");
+                }
+
+                let res = chk_click_position(gm.map.mine_list);
+                if(res != undefined){
+                    alert("地雷を踏んでしまいました！" + res.danger + "のダメージ。");
+                    gm.player_info.hp -= res.danger;
+                    if(gm.player_info.hp < 0){
+                        alert("ゲームオーバーです。");
+                        gm.sceneflag = 'dead';
+                    }
+                }
+            }
+            
+            function chk_click_position(list){
+                var res = list.find(function(value, index, array){
+                    return (value.x === gameManagement.player_position.x && value.y === gameManagement.player_position.y);
+                });
+
+                return res;
+            }
+
+            // キーボード操作時
+            document.addEventListener('keyup', keyup_ivent);
+            function keyup_ivent(e) {
+                if(gameManagement.sceneflag == 'dead'){
+                    return;
+                }
+                Move_ivent_before(gameManagement);
+                switch (e.key) {
+                    case 'ArrowUp':
+                        gameManagement.Move_Up();
+                        break;
+                    case 'ArrowDown':
+                        gameManagement.Move_Down();
+                        break;
+                    case 'ArrowLeft':
+                        gameManagement.Move_Left();
+                        break;
+                    case 'ArrowRight':
+                        gameManagement.Move_Right();
+                        break;
+                }
+                Mapdraw(gameManagement);
+                UIdraw(gameManagement);
+                Move_ivent_after(gameManagement);
+                return false; 
+            }
+            // 画面上のボタンで操作時
+            function pushdisplaybutton(value){
+                if(gameManagement.sceneflag == 'dead'){
+                    return;
+                }
+                Move_ivent_before(gameManagement);
+                switch (value) {
+                    case 'UP':
+                        gameManagement.Move_Up();
+                        break;
+                    case 'DOWN':
+                        gameManagement.Move_Down();
+                        break;
+                    case 'LEFT':
+                        gameManagement.Move_Left();
+                        break;
+                    case 'RIGHT':
+                        gameManagement.Move_Right();
+                        break;
+                }
+                Mapdraw(gameManagement);
+                UIdraw(gameManagement);
+                Move_ivent_after(gameManagement);
+                return false; 
+            }
+
+            function Mapdraw(gm){
+                arr = gm.map.distribution;
+                mine = gm.map.mine_list;
+
+                // マップの描画
                 const canvas = document.getElementById("canvas");
                 const ctx = canvas.getContext("2d");
 
                 // Calculate canvas size based on array dimensions
-                const width = arr[0].length * 20;
-                const height = arr.length * 20;
-                canvas.width = width;
-                canvas.height = height;
+                const maptilesize = 60;
+                canvas.width = 360;  // 5*maptilesize*(maptilesize/2)*2
+                canvas.height = 360;
 
-                // Draw each cell with appropriate background color and border
-                for (let i = 0; i < arr.length; i++) {
-                    for (let j = 0; j < arr[i].length; j++) {
-                        const value = arr[i][j];
-
-                        // Set cell background color based on value
-                        ctx.fillStyle = "white";
-
-                        // Draw cell and border
-                        ctx.fillRect(j * 20, i * 20, 20, 20);
-                        ctx.strokeStyle = "black";
-                        ctx.strokeRect(j * 20, i * 20, 20, 20);
+                function maprange(player_position, mapsize){
+                // プレイヤーの周囲（2マス先まで）のマスを描画
+                // 描画内容の開始位置を設定
+                    let mapstart = player_position - 3;
+                    let mapend = player_position + 4;
+                    if(mapstart < 0){
+                        mapend = player_position + 4 + Math.abs(mapstart);
+                        mapstart = 0;
                     }
+                    if(mapend > mapsize){
+                        mapstart = mapstart - Math.abs(mapend - mapsize);
+                        mapend = mapsize;
+                    }
+                    return {start:mapstart, end:mapend};
+                }
+                
+                function drawstart_pos(drawrange){
+                    // 描画開始位置を設定
+                    let drawstart = { x: Math.max(drawrange.x.start * maptilesize, 0) +maptilesize/2,
+                                    y: Math.max(drawrange.y.start * maptilesize, 0) +maptilesize/2 };
+                    //プレイヤー位置が端に近かったときに描画位置をずらす処理
+                    if(gm.player_position.x <= 2){
+                        drawstart.x -= maptilesize;
+                    }
+                    if(gm.player_position.x >= arr[0].length - 3){
+                        drawstart.x += maptilesize;
+                    }
+                    if(gm.player_position.y <= 2){
+                        drawstart.y -= maptilesize;
+                    }
+                    if(gm.player_position.y >= arr.length - 3){
+                        drawstart.y += maptilesize;
+                    }
+                    return drawstart;
                 }
 
-                // Add click event listener to canvas
-                canvas.addEventListener("click", function(event) {
-                    const rect = canvas.getBoundingClientRect();
-                    const x = event.clientX - rect.left;
-                    const y = event.clientY - rect.top;
-                    const cellX = Math.floor(x / 20);
-                    const cellY = Math.floor(y / 20);
-                    const cellValue = arr[cellY][cellX];
+                let drawrange = {x:maprange(gm.player_position.x, arr[0].length),
+                                 y:maprange(gm.player_position.y, arr.length)};
+                let drawstart = drawstart_pos(drawrange);
 
-                    var page_score = document.getElementById("score");
-                    var page_hp = document.getElementById("HP");
-
-                    // Set cell background color to reveal color
-                    if (cellValue === 0) {
-                        ctx.fillStyle = "lightgreen";
-                    } else if (cellValue >= 60) {
-                        ctx.fillStyle = "red";
-                    } else if (cellValue >= 40) {
-                        ctx.fillStyle = "pink";
-                    } else if (cellValue >= 20) {
-                        ctx.fillStyle = "green";
-                    } else {
-                        ctx.fillStyle = "yellow";
+                for (let i = drawrange.y.start; i < drawrange.y.end; i++) {
+                    for (let j = drawrange.x.start; j < drawrange.x.end; j++) {
+                        const value = arr[i][j];
+                        // Set cell background color based on value
+                        ctx.fillStyle = "white";
+                        if(gm.player_passed_map[i][j] == 1){
+                            if (value === 0) {
+                                ctx.fillStyle = "lightgreen";
+                            } else if (value >= 60) {
+                                ctx.fillStyle = "red";
+                            } else if (value >= 40) {
+                                ctx.fillStyle = "orange";
+                            } else if (value >= 20) {
+                                ctx.fillStyle = "pink";
+                            } 
+                            var res = mine.some(function(value, index, array){
+                            return (value.x === j && value.y === i);
+                            });
+                            if(res){
+                                ctx.fillStyle = "black";
+                            }
+                        } else {
+                            ctx.fillStyle = "yellow";
+                        }
+                        if(i == gm.map.goal.y && j == gm.map.goal.x){
+                            ctx.fillStyle = "green";
+                        }
+                        if(i == gm.player_position.y && j == gm.player_position.x ){
+                            ctx.fillStyle = "blue";
+                        }
+                        
+                        // Draw cell and border
+                        ctx.fillRect((j * maptilesize) - drawstart.x, (i * maptilesize) -drawstart.y, maptilesize, maptilesize);
+                        ctx.strokeStyle = "black";
+                        ctx.strokeRect((j * maptilesize)- drawstart.x, (i * maptilesize)-drawstart.y, maptilesize, maptilesize);
                     }
+                }
+            }
 
-                    ctx.fillRect(cellX * 20, cellY * 20, 20, 20);
-                    ctx.strokeStyle = "black";
-                    ctx.strokeRect(cellX * 20, cellY * 20, 20, 20);
+            function UIdraw(gm){
+                const page_hp = document.getElementById('HP');
+                const page_progress = document.getElementById('progress');
 
-                    // Display cell value in alert dialog
-                    if(mine[cellY][cellX] > 0){
-                      alert("地雷を踏んでしまいました！" + cellValue + "のダメージ。");
-                      ctx.fillStyle = "black";
-                      ctx.fillRect(cellX * 20, cellY * 20, 20, 20);
-                      hp -= mine[cellY][cellX];
-                      if(hp < 0){
-                        alert("ゲームオーバーです。");
-                      }
-                    }else{
-                        score += arr[cellY][cellX];
-                    }
-                    page_score.textContent = "SCORE:" + score;
-                    page_hp.textContent = "HP:" + hp;
-                });
+                page_hp.textContent = "HP:" + gm.player_info.hp;
+                page_progress.textContent = "調査進捗:" + gm.gameprogress() + "%";
             }
         </script>
     </body>
