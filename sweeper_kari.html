@@ -2,12 +2,10 @@
 <html>
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-		<link rel="stylesheet" href="../main.css">
-		<link href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" rel="stylesheet">
 		<meta http-equiv="content-type" charset="UTF-8">
 		<meta name="twitter:card" content="summary" />
 		<meta name="twitter:site" content="@kky3ka" />
-		<meta property="og:url" content="https://3ka.me/tools/sweeper_kari3.html" />
+		<meta property="og:url" content="https://3ka.me/tools/sweeper_kari.html" />
 		<meta property="og:title" content="ふぁじいすいーぱー（仮）～新米スイーパーの冒険編～" />
 		<meta property="og:description" content="マインスイーパー的な何か" /> 
         <style>
@@ -27,7 +25,12 @@
                 height: 3em;
                 border-radius: 0.5em;
             }
-        </style>  
+        </style>
+        <script type="text/javascript" src="charactor.js"></script>
+        <script type="text/javascript" src="map.js"></script>
+        <script type="text/javascript" src="init_img.js"></script>
+        <script type="text/javascript" src="event_turn.js"></script>
+        <script type="text/javascript" src="gamemanagement.js"></script>
         <title>ふぁじいすいーぱー（仮） ～新米スイーパーの冒険編～</title>
     </head>
     <body>
@@ -51,191 +54,7 @@
                 <div></div>
             </div>
         </div>
-        <script>
-            class Equipment {
-                constructor(weapon = null, armor = null, accessory = null){
-                    this.weapon = weapon;
-                    this.armor = armor;
-                    this.accessory = accessory;
-                }
-                equip_weapon(weapon){
-                    this.weapon = weapon;
-                }
-                unequip_weapon(){
-                    this.weapon = null;
-                }
-                equip_armor(armor){
-                    this.armor = armor;
-                }
-                unequip_armor(){
-                    this.armor = null;
-                }
-                equip_accessory(accessory){
-                    this.accessory = accessory;
-                }
-                unequip_accesory(){
-                    this.accessory = null;
-                }
-            }
-
-            class Character {
-                constructor(name, max_hp, max_mp, attack, defense, luck, weapon, armor, accessory) {
-                    this.name = name;
-                    this.hp = max_hp;
-                    this.max_hp = max_hp;
-                    this.mp = max_mp;
-                    this.max_mp = max_mp;
-                    this.attack = attack;
-                    this.defense = defense;
-                    this.luck = luck;
-                    this.equipment = new Equipment(weapon, armor, accessory);
-                    this.condition = "正常";
-                    this.inventory = [];
-                }
-                
-                attack() {
-                    var damage = Math.floor(Math.random() * (this.attack - this.enemy_defense + 1)) + this.luck;
-                    if (damage < 1) {
-                    damage = 1;
-                    }
-                    console.log(`${this.name}の攻撃！${damage}のダメージを与えた。`);
-                }
-                
-                defend() {
-                    console.log(`${this.name}は防御態勢をとった。`);
-                }
-                
-                use_item(item) {
-                    if (item.effect == "回復") {
-                    // 回復アイテムを使用した場合の処理
-                    this.hp += item.value;
-                    if (this.hp > this.max_hp) {
-                        this.hp = this.max_hp;
-                    }
-                    console.log(`${item.name}を使い、体力を${item.value}回復した。現在の体力は${this.hp}だ。`);
-                    } else if (item.effect == "異常回復") {
-                    // 異常回復アイテムを使用した場合の処理
-                    if (this.condition == "正常") {
-                        console.log(`${item.name}を使ったが、何も起こらなかった。`);
-                    } else {
-                        this.condition = "正常";
-                        console.log(`${item.name}を使い、${this.name}の状態異常が解除された。現在の状態は${this.condition}だ。`);
-                    }
-                    } else if (item.effect == "異常付与") {
-                    // 異常付与アイテムを使用した場合の処理
-                    this.enemy_condition = "混乱";
-                    console.log(`${item.name}を使い、相手を混乱させた。相手の状態は${this.enemy_condition}だ。`);
-                    } else if (item.effect == "戦闘用") {
-                    // 戦闘用アイテムを使用した場合の処理
-                    var damage = item.value;
-                    this.enemy_hp -= damage;
-                    console.log(`${item.name}を使い、相手に${damage}のダメージを与えた。相手の残りの体力は${this.enemy_hp}だ。`);
-                    }
-                }
-
-                cast_spell(){
-
-                }
-            }
-
-            var items = [
-                {name: "回復薬", price: 100, effect: "回復", value: 50, text: "体力が回復する薬"},
-                {name: "麻痺薬", price: 100, effect: "異常回復", value: 50, text: "麻痺状態を解除する薬"},
-                {name: "解毒薬", price: 100, effect: "異常回復", value: 50, text: "毒状態を解除する薬"},
-                {name: "眠り薬", price: 100, effect: "異常付与", value: 50, text: "敵に眠り状態を付与する"},
-                {name: "煙幕玉", price: 100, effect: "異常付与", value: 50, text: "敵に混乱状態を付与する"},
-                {name: "爆弾", price: 100, effect: "戦闘用", value: 50, text: "敵にダメージを与える"}
-            ];
-
-            class Map {
-                genelate_list(map_size, event, difficulity_range){
-                    // 引数：マップの広さ（二次元配列のサイズ）、マップ内のイベント数、危険度幅
-                    // 戻り値：敵出現位置リスト
-                    let map_array = new Array(event);
-                    
-                    for(let i = 0;  i < event; i++){
-                        let x = Math.floor(Math.random() * (map_size.x));
-                        let y = Math.floor(Math.random() * (map_size.y));
-                        let danger = Math.floor(Math.random() * (difficulity_range.max - difficulity_range.min)) + difficulity_range.min;
-                        map_array[i] = {x:x, y:y, danger:danger};
-                    }
-                    return map_array;
-                }
-                genelate_distribution(map_size, map_miner){
-                    // 引数：エネミーマップ
-                    // 戻り値：危険度分布
-                    let map_distribution = this.map_init(map_size);
-
-                    // マスの危険度決定
-                    map_distribution = this.calc_dangerlate(map_distribution, map_miner, 2);
-                    map_distribution = this.calc_dangerlate(map_distribution, map_miner);
-
-                    return map_distribution;
-                }
-
-                calc_dangerlate(board, miner, field=1){
-                    let events_count = miner.length - 1;
-                    while( events_count >= 0){
-                        let x = miner[events_count].x;
-                        let y = miner[events_count].y;
-                        let danger = miner[events_count].danger;
-
-                        for (let i = Math.max(y-field, 0); i < Math.min(y+(field + 1), board.length); i++) {
-                            for (let j = Math.max(x-field, 0); j < Math.min(x+(field + 1), board[0].length); j++) {
-                                board[i][j] = board[i][j] + (danger / (field * 2));
-                            }
-                        }
-                        events_count--;
-                    }
-                    return board;
-                }
-
-                set_random_point (map_size, mine_list){
-                    // 位置をランダムに決定　地雷のある場所は選ばれない
-                    let x, y;
-                    do {
-                        x = Math.floor(Math.random() * (map_size.x));
-                        y = Math.floor(Math.random() * (map_size.y));
-
-                        var res = mine_list.some(function(value, index, array){
-                            return (value.x === x && value.y === y);
-                        });
-                    } while(res == true);
-                    
-                    return {x:x, y:y};
-                }
-
-                set_goal_point (map_size, mine_list, start_point){
-                    // ゴール位置を決定　スタート位置と地雷のある場所は選ばれない
-                    let goal;
-                    do {
-                        goal = this.set_random_point(map_size, mine_list);
-                    }while(start_point.x == goal.x && start_point.y == goal.y);
-
-                    return goal;
-                }
-
-                map_init(map_size){
-                    // 空状態のマップを作成
-                    let map_row = map_size.x;
-                    let map_col = map_size.y;
-
-                    let map_emp = new Array(map_col);
-                    for(let i = 0; i < map_emp.length; i++){
-                        map_emp[i] = new Array(map_row).fill(0);
-                    }
-                    return map_emp;
-                }
-
-                constructor(map_size, event, difficulity_range){
-                    this.size = map_size;
-                    this.mine_list = this.genelate_list(this.size, event, difficulity_range);
-                    this.distribution = this.genelate_distribution(this.size, this.mine_list);
-                    this.start = this.set_random_point(this.size, this.mine_list);
-                    this.goal = this.set_goal_point(this.size, this.mine_list, this.start);
-                }
-            }
-
+        <script type="text/javascript">
             class GameManagement{
                 constructor(player, map, sceneflag = 1){
                     this.player_info = player;
@@ -284,16 +103,6 @@
                     }
                 }
             }
-            const imgdir = "sweeper_img/";
-            const grass = new Image();
-            grass.src = imgdir + "grass.gif";
-            const grass_dark = new Image();
-            grass_dark.src = imgdir + "grass_dark.gif";
-            const shige = new Image();
-            shige.src = imgdir + "shigemi.gif"; 
-            const enemy = new Image();
-            enemy.src = imgdir + "enemy.gif";
-
             var player = new Character(name, 500, 10, 50, 50, 0, null, null, null);
             var map = new Map({x: 15, y: 24}, 30, {max:70, min:10});
             var gameManagement = new GameManagement(player, map, 1);
@@ -303,40 +112,6 @@
             console.log(map.goal);
             UIdraw(gameManagement);
             Mapdraw(gameManagement);
-
-            function Move_ivent_before(gameManagement){
-                //移動指示時に発生する内部処理
-                gameManagement.map_passed(gameManagement.player_position);
-            }
-
-            function Move_ivent_after(gameManagement){
-                let gm = gameManagement;
-                // 移動終了後に発生する内部処理
-                if(gm.map.goal.x == gm.player_position.x && gm.map.goal.y == gm.player_position.y && gm.gameprogress() > 80){
-                    alert("あなたは十分な調査結果を持って生還することに成功した。次の任務も期待されているぞ……");
-                }else if(gm.map.goal.x == gm.player_position.x && gm.map.goal.y == gm.player_position.y){
-                    alert("調査結果が足りないと怒られてしまった。もう少し探索してみよう……");
-                }
-
-                let res = chk_click_position(gm.map.mine_list);
-                if(res != undefined){
-                    alert("モンスターが襲いかかってきた！" + res.danger + "のダメージ。");
-                    gm.player_info.hp -= res.danger;
-                    if(gm.player_info.hp < 0){
-                        alert("ゲームオーバーです。");
-                        UIdraw(gm);
-                        gm.sceneflag = 'dead';
-                    }
-                }
-            }
-            
-            function chk_click_position(list){
-                var res = list.find(function(value, index, array){
-                    return (value.x === gameManagement.player_position.x && value.y === gameManagement.player_position.y);
-                });
-
-                return res;
-            }
 
             // キーボード操作時
             document.addEventListener('keyup', keyup_ivent);
@@ -390,221 +165,6 @@
                 return false; 
             }
 
-            function Mapdraw(gm){
-                arr = gm.map.distribution;
-
-                // マップの描画
-                const canvas = document.getElementById("canvas");
-                const ctx = canvas.getContext("2d");
-
-                // Calculate canvas size based on array dimensions
-                const maptilesize = 60;
-                canvas.width = 360;  // 5*maptilesize*(maptilesize/2)*2
-                canvas.height = 360;
-
-                function maprange(player_position, mapsize){
-                // プレイヤーの周囲（2マス先まで）のマスを描画
-                // 描画内容の開始位置を設定
-                    let mapstart = player_position - 3;
-                    let mapend = player_position + 4;
-                    if(mapstart < 0){
-                        mapend = player_position + 4 + Math.abs(mapstart);
-                        mapstart = 0;
-                    }
-                    if(mapend > mapsize){
-                        mapstart = mapstart - Math.abs(mapend - mapsize);
-                        mapend = mapsize;
-                    }
-                    return {start:mapstart, end:mapend};
-                }
-                
-                function drawstart_pos(drawrange){
-                    // 描画開始位置を設定
-                    let drawstart = { x: Math.max(drawrange.x.start * maptilesize, 0) +maptilesize/2,
-                                    y: Math.max(drawrange.y.start * maptilesize, 0) +maptilesize/2 };
-                    //プレイヤー位置が端に近かったときに描画位置をずらす処理
-                    if(gm.player_position.x <= 2){
-                        drawstart.x -= maptilesize;
-                    }
-                    if(gm.player_position.x >= arr[0].length - 3){
-                        drawstart.x += maptilesize;
-                    }
-                    if(gm.player_position.y <= 2){
-                        drawstart.y -= maptilesize;
-                    }
-                    if(gm.player_position.y >= arr.length - 3){
-                        drawstart.y += maptilesize;
-                    }
-                    return drawstart;
-                }
-
-                let drawrange = {x:maprange(gm.player_position.x, arr[0].length),
-                                 y:maprange(gm.player_position.y, arr.length)};
-                let drawstart = drawstart_pos(drawrange);
-
-                draw_maptile(drawrange, drawstart, maptilesize, ctx, gm)
-            }
-
-            function draw_maptile(drawrange, drawstart, maptilesize, ctx, gm){
-                mine = gm.map.mine_list;
-
-                for (let i = drawrange.y.start; i < drawrange.y.end; i++) {
-                    for (let j = drawrange.x.start; j < drawrange.x.end; j++) {
-                        const value = arr[i][j];
-                        // 地面ベースカラー
-                        ctx.fillStyle = "white";
-                        if(gm.player_passed_map[i][j] == 1){
-                            if (value === 0) {
-                                ctx.fillStyle = "rgb(223,159,95)";
-                            } else {
-                                ctx.fillStyle = "lightgreen";
-                            }
-                        }
-                        if((i - 1 <= gm.player_position.y && gm.player_position.y <= i + 1 ) &&
-                           (j - 1 <= gm.player_position.x && gm.player_position.x <= j + 1 )
-                          ){
-                            if (value === 0) {
-                                ctx.fillStyle = "rgb(223,159,95)";
-                            } else {
-                                ctx.fillStyle = "lightgreen";
-                            }
-                        }
-                        if(i == gm.map.goal.y && j == gm.map.goal.x){
-                            ctx.fillStyle = "red";
-                        }
-                        ctx.fillRect((j * maptilesize) - drawstart.x, (i * maptilesize) -drawstart.y, maptilesize, maptilesize);
-
-                        if(gm.player_passed_map[i][j] == 1 || (i == gm.player_position.y && j == gm.player_position.x)){
-                            let pl_around = [
-                                [ 0, 0, 0 ],
-                                [ 0, arr[i][j], 0],
-                                [ 0, 0, 0 ]
-                            ];
-                            (i > 0 && j > 0)                                 ? pl_around[0][0] = arr[i-1][j-1] : 0;
-                            (i > 0)                                          ? pl_around[0][1] = arr[i-1][j] : 0;
-                            (i > 0 && j < drawrange.x.end-1)                 ? pl_around[0][2] = arr[i-1][j+1] : 0;
-                            (j > 0)                                          ? pl_around[1][0] = arr[i][j-1] : 0;
-                            (j < drawrange.x.end-1)                          ? pl_around[1][2] = arr[i][j+1] : 0;
-                            (i < drawrange.y.end-1 && j > 0)                 ? pl_around[2][0] = arr[i+1][j-1] : 0;
-                            (i < drawrange.y.end-1)                          ? pl_around[2][1] = arr[i+1][j] : 0;
-                            (i < drawrange.y.end-1 && j < drawrange.x.end-1) ? pl_around[2][2] = arr[i+1][j+1] : 0;
-                            
-                            // マップタイル画像の描画
-                            if(value >= 20){
-                                draw_maptile_grass((j * maptilesize) - drawstart.x, (i * maptilesize) -drawstart.y, ctx, pl_around);
-                            }
-                            if(value >= 40){
-                                draw_maptile_grass_dark((j * maptilesize) - drawstart.x, (i * maptilesize) -drawstart.y, ctx, pl_around);
-                            }
-                            if(value >= 60){
-                                draw_maptile_shige((j * maptilesize) - drawstart.x, (i * maptilesize) -drawstart.y, ctx, pl_around);
-                            }
-                            // キャラクター位置の描画
-                            var res = mine.some(function(value, index, array){
-                            return (value.x === j && value.y === i);
-                            });
-                            if(res){
-                                draw_character_enemy((j * maptilesize) - drawstart.x, (i * maptilesize) -drawstart.y, ctx);
-                            }
-                        }
-                        // 影など演出
-                        if(i == gm.player_position.y && j == gm.player_position.x){
-                            ctx.fillStyle = "rgba(255,255,255,0.5)";
-                            ctx.fillRect((j * maptilesize) - drawstart.x, (i * maptilesize) -drawstart.y, maptilesize, maptilesize);
-                        }else if(gm.player_passed_map[i][j] != 1){
-                            ctx.fillStyle = "rgba(0,0,0,0.25)";
-                            ctx.fillRect((j * maptilesize) - drawstart.x+5, (i * maptilesize) -drawstart.y+5, maptilesize-10, maptilesize-10);
-                            ctx.fillStyle = "rgba(0,0,0,0.25)";
-                            ctx.fillRect((j * maptilesize) - drawstart.x+10, (i * maptilesize) -drawstart.y+10, maptilesize-20, maptilesize-20);
-                        }
-                    }
-                }
-            }
-            function draw_darkness(pos_x, pos_y, ctx){
-                ctx.fillRect((j * maptilesize) - drawstart.x, (i * maptilesize) -drawstart.y, maptilesize, maptilesize);
-            }
-            function draw_character_enemy(pos_x, pos_y, ctx){
-                ctx.drawImage(enemy, 0, 0, 60, 60, pos_x, pos_y, 60, 60);
-            }
-            
-            function draw_maptile_shige(pos_x, pos_y, ctx){
-                ctx.drawImage(shige, 0, 0, 60, 60, pos_x, pos_y, 60, 60);
-            }
-
-            function draw_maptile_grass(pos_x, pos_y, ctx, around){
-                draw_maptile_autotile(pos_x, pos_y, ctx, around, grass, 20);
-            }
-
-            function draw_maptile_grass_dark(pos_x, pos_y, ctx, around){
-                draw_maptile_autotile(pos_x, pos_y, ctx, around, grass_dark, 40);
-            }
-
-            function draw_maptile_autotile(pos_x, pos_y, ctx, around, tilechip, val){
-                if(around[0][1] >= val && around[1][0] >= val && around[2][1] >= val && around[1][2] >= val){
-                    ctx.drawImage(tilechip, 30, 30, 60, 60, pos_x, pos_y, 60, 60);
-                }else if(around[0][1] < val && around[1][0] < val && around[1][2] < val){
-                // 隣接が下のマスとだけ
-                    ctx.drawImage(tilechip, 0, 0, 30, 60, pos_x, pos_y, 30, 60);
-                    ctx.drawImage(tilechip, 90, 0, 30, 60, pos_x + 30, pos_y, 30, 60);
-                }else if( around[1][2] < val && around[0][1] < val && around[2][1] < val){
-                // 左とだけ
-                    ctx.drawImage(tilechip, 60, 0, 60, 30, pos_x, pos_y, 60, 30);
-                    ctx.drawImage(tilechip, 60, 90, 60, 30, pos_x , pos_y + 30, 60, 30);
-                }else if( around[0][1] < val && around[1][0] < val && around[2][1] < val){
-                // 右とだけ
-                    ctx.drawImage(tilechip, 0, 0, 60, 30, pos_x, pos_y, 60, 30);
-                    ctx.drawImage(tilechip, 0, 90, 60, 30, pos_x, pos_y + 30, 60, 30);
-                }else if( around[1][0] < val && around[2][1] < val && around[1][2] < val){
-                // 上とだけ
-                    ctx.drawImage(tilechip, 0, 60, 30, 60, pos_x, pos_y, 30, 60);
-                    ctx.drawImage(tilechip, 90, 60, 30, 60, pos_x + 30, pos_y, 30, 60);
-                }else if(around[0][1] < val && around[1][0] < val ){    
-                //左上角                
-                    ctx.drawImage(tilechip, 0, 0, 60, 60, pos_x, pos_y, 60, 60);
-                }else if( around[1][2] < val && around[0][1] < val ){
-                //右上角                  
-                    ctx.drawImage(tilechip, 60, 0, 60, 60, pos_x, pos_y, 60, 60);
-                }else if( around[1][0] < val && around[2][1] < val ){
-                // 左下角                    
-                    ctx.drawImage(tilechip, 0, 60, 60, 60, pos_x, pos_y, 60, 60);  
-                }else if( around[2][1] < val && around[1][2] < val ){
-                // 右下角                    
-                    ctx.drawImage(tilechip, 60, 60, 60, 60, pos_x, pos_y, 60, 60);
-                }else if( around[1][0] < val && around[1][2] < val){
-                // 一本道　上下と隣接
-                    ctx.drawImage(tilechip, 0, 30, 30, 60, pos_x, pos_y, 30, 60);
-                    ctx.drawImage(tilechip, 90, 30, 30, 60, pos_x + 30, pos_y, 30, 60);
-                }else if( around[0][1] < val && around[2][1] < val){
-                // 一本道　左右と隣接
-                    ctx.drawImage(tilechip, 30, 0, 60, 30, pos_x, pos_y, 60, 30);
-                    ctx.drawImage(tilechip, 30, 90, 60, 30, pos_x, pos_y + 30, 60, 30);
-                }else if( around[0][1] < val){
-                // 上
-                    ctx.drawImage(tilechip, 30, 0, 60, 60, pos_x, pos_y, 60, 60);
-                }else if( around[2][1] < val){
-                // 下
-                    ctx.drawImage(tilechip, 30, 60, 60, 60, pos_x, pos_y, 60, 60);
-                }else if( around[1][0] < val){
-                // 左
-                    ctx.drawImage(tilechip, 0, 30, 60, 60, pos_x, pos_y, 60, 60);
-                }else if( around[1][2] < val){
-                // 右
-                    ctx.drawImage(tilechip, 60, 30, 60, 60, pos_x, pos_y, 60, 60);
-                }else{
-                    ctx.drawImage(tilechip, 0, 0, 30, 30, pos_x, pos_y, 30, 30);
-                    ctx.drawImage(tilechip, 90, 0, 30, 30, pos_x + 30, pos_y, 30, 30);
-                    ctx.drawImage(tilechip, 0, 90, 30, 30, pos_x, pos_y + 30, 30, 30);
-                    ctx.drawImage(tilechip, 90, 90, 30, 30, pos_x + 30, pos_y + 30, 30, 30);
-                }
-            }
-
-            function UIdraw(gm){
-                const page_hp = document.getElementById('HP');
-                const page_progress = document.getElementById('progress');
-
-                page_hp.textContent = "HP:" + gm.player_info.hp;
-                page_progress.textContent = "調査進捗:" + gm.gameprogress() + "%";
-            }
         </script>
     </body>
 </html>

@@ -1,0 +1,20 @@
+
+{
+    "equip_item":
+    {
+
+    },
+    "once_item":
+    {
+        "1":{"name": "回復薬", "price": 100, "effect": "回復", "value": 50, "text": "体力が回復する薬"},
+        "2":{"name": "麻痺薬", "price": 100, "effect": "異常回復", "value": 50, "text": "麻痺状態を解除する薬"},
+        "3":{"name": "解毒薬", "price": 100, "effect": "異常回復", "value": 50, "text": "毒状態を解除する薬"},
+        "4":{"name": "眠り薬", "price": 100, "effect": "異常付与", "value": 50, "text": "敵に眠り状態を付与する"},
+        "5":{"name": "煙幕玉", "price": 100, "effect": "異常付与", "value": 50, "text": "敵に混乱状態を付与する"},
+        "6":{"name": "爆弾", "price": 100, "effect": "戦闘用", "value": 50, "text": "敵にダメージを与える"}
+    },
+    "tresure_item":
+    {
+
+    }
+}
