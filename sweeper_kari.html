@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+		<link rel="stylesheet" href="../main.css">
+		<link href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" rel="stylesheet">
+		<meta http-equiv="content-type" charset="UTF-8">
+		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:site" content="@kky3ka" />
+		<meta property="og:url" content="https://3ka.me/tools/okureru.php" />
+		<meta property="og:title" content="ふぁじいすいーぱー（仮）" />
+		<meta property="og:description" content="マインスイーパー的な何か" />    
+        <title>ふぁじいすいーぱー（仮）</title>
+    </head>
+    <body>
+        <div>
+            <h1>ふぁじいすいーぱー（仮）</h1>
+            <p>
+            一日で作ったマインスイーパー的ななにか。<br>
+            普通のマインスイーパーと異なるのは、隣接している地雷の数が見えず、マスの色で危険度が表示されています。<br>
+            完全に安全なエリアは黄緑色で、他の色のマスには近くに地雷がある可能性があります。<br>
+            赤色など危険そうな色のマスほど近くに強い地雷が潜んでいます。<br>
+            HPが無くなるまでに地雷以外の全マス開けられたらゲームクリアだと思ってください。
+            </p>
+            <canvas id="canvas"></canvas>
+            <div>
+                <div id="score"></div>
+                <div id="HP"></div>
+            </div>
+        </div>
+        <script>
+            var score = 0;
+            var hp = 500;
+
+            let map_mine = map_genelate({x: 15, y: 24}, 30, {max:70, min:10});
+            let map_distribution = map_genelate_distribution(map_mine);
+            UIdraw(map_distribution, map_mine);
+
+            function map_genelate(map_size, event, difficulity_range){
+                // マップを生成
+                // 引数：マップの広さ（二次元配列のサイズ）、マップ内のイベント数、危険度幅
+                // 戻り値：生成されたマップ
+                let map_array = new Array(map_size.y);
+                for(let i = 0; i < map_array.length; i++){
+                    map_array[i] = new Array(map_size.x).fill(0);
+                }
+
+                for(let i = 0;  i < event; i++){
+                    let row = Math.floor(Math.random() * (map_size.x));
+                    let col = Math.floor(Math.random() * (map_size.y));
+                    map_array[col][row] = Math.floor(Math.random() * (difficulity_range.max - difficulity_range.min)) + difficulity_range.min;
+                    //console.log("{" + x +","+ y + "}:" + map_array[x][y]);
+                }
+                return map_array;
+            }
+
+            function map_genelate_distribution(map_miner){
+                // 引数：エネミーマップ
+                // 戻り値：危険度分布
+                let map_row = map_miner[0].length;
+                let map_col = map_miner.length;
+
+                let map_distribution = new Array(map_col);
+                for(let i = 0; i < map_distribution.length; i++){
+                    map_distribution[i] = new Array(map_row).fill(0);
+                }
+
+                // マスの危険度決定
+                for(var y = 0; y < map_col; y++){
+                    for(var x = 0; x < map_row; x++){
+                        map_distribution[y][x] = map_calc_dangerlate(map_miner, x, y);
+                    }
+                }
+
+                return map_distribution;
+            }
+
+            function map_calc_dangerlate(board, x, y){
+                let count = 0;
+                let dangerlate = 0;
+
+                for (let i = Math.max(y-1, 0); i < Math.min(y+2, board.length); i++) {
+                    for (let j = Math.max(x-1, 0); j < Math.min(x+2, board[0].length); j++) {
+                        if (board[i][j] > 0) {
+                            count += 1;
+                            dangerlate += board[i][j];
+                        }
+                    }
+                }
+                if(count >= 2){
+                    dangerlate = Math.floor(dangerlate / count);
+                }
+                return dangerlate;
+            }
+
+            function UIdraw(arr, mine){
+                const canvas = document.getElementById("canvas");
+                const ctx = canvas.getContext("2d");
+
+                // Calculate canvas size based on array dimensions
+                const width = arr[0].length * 20;
+                const height = arr.length * 20;
+                canvas.width = width;
+                canvas.height = height;
+
+                // Draw each cell with appropriate background color and border
+                for (let i = 0; i < arr.length; i++) {
+                    for (let j = 0; j < arr[i].length; j++) {
+                        const value = arr[i][j];
+
+                        // Set cell background color based on value
+                        ctx.fillStyle = "white";
+
+                        // Draw cell and border
+                        ctx.fillRect(j * 20, i * 20, 20, 20);
+                        ctx.strokeStyle = "black";
+                        ctx.strokeRect(j * 20, i * 20, 20, 20);
+                    }
+                }
+
+                // Add click event listener to canvas
+                canvas.addEventListener("click", function(event) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = event.clientX - rect.left;
+                    const y = event.clientY - rect.top;
+                    const cellX = Math.floor(x / 20);
+                    const cellY = Math.floor(y / 20);
+                    const cellValue = arr[cellY][cellX];
+
+                    var page_score = document.getElementById("score");
+                    var page_hp = document.getElementById("HP");
+
+                    // Set cell background color to reveal color
+                    if (cellValue === 0) {
+                        ctx.fillStyle = "lightgreen";
+                    } else if (cellValue >= 60) {
+                        ctx.fillStyle = "red";
+                    } else if (cellValue >= 40) {
+                        ctx.fillStyle = "pink";
+                    } else if (cellValue >= 20) {
+                        ctx.fillStyle = "green";
+                    } else {
+                        ctx.fillStyle = "yellow";
+                    }
+
+                    ctx.fillRect(cellX * 20, cellY * 20, 20, 20);
+                    ctx.strokeStyle = "black";
+                    ctx.strokeRect(cellX * 20, cellY * 20, 20, 20);
+
+                    // Display cell value in alert dialog
+                    if(mine[cellY][cellX] > 0){
+                      alert("地雷を踏んでしまいました！" + cellValue + "のダメージ。");
+                      ctx.fillStyle = "black";
+                      ctx.fillRect(cellX * 20, cellY * 20, 20, 20);
+                      hp -= mine[cellY][cellX];
+                      if(hp < 0){
+                        alert("ゲームオーバーです。");
+                      }
+                    }else{
+                        score += arr[cellY][cellX];
+                    }
+                    page_score.textContent = "SCORE:" + score;
+                    page_hp.textContent = "HP:" + hp;
+                });
+            }
+        </script>
+    </body>
+</html>
