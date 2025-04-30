@@ -6,7 +6,7 @@
 		<meta name="twitter:card" content="summary" />
 		<meta name="twitter:site" content="@kky3ka" />
 		<meta property="og:url" content="https://3ka.me/tools/sweeper_kari.html" />
-		<meta property="og:title" content="ふぁじいすいーぱー（仮）～新米スイーパーの冒険編～" />
+		<meta property="og:title" content="RPGSweeper" />
 		<meta property="og:description" content="マインスイーパー的な何か" /> 
         <style>
             .controller{
@@ -30,12 +30,12 @@
         <script type="text/javascript" src="map.js"></script>
         <script type="text/javascript" src="init_img.js"></script>
         <script type="text/javascript" src="event_turn.js"></script>
-        <script type="text/javascript" src="gamemanagement.js"></script>
-        <title>ふぁじいすいーぱー（仮） ～新米スイーパーの冒険編～</title>
+        <script type="text/javascript" src="draw_map.js"></script>
+        <title>RPGSweeper</title>
     </head>
     <body>
         <div>
-            <h1>ふぁじいすいーぱー（仮）～新米スイーパーの冒険編～</h1>
+            <h1>RPGSweeper</h1>
             </p>
             <div>
                 <div id="HP"></div>
@@ -61,21 +61,7 @@
                     this.map = map;
                     this.player_position = map.start;
                     this.sceneflag = sceneflag;
-                    this.player_checked_map = 1;
-                    this.player_passed_map = this.map.map_init(this.map.size);
-                }
-
-                gameprogress(){
-                    let mapsize = this.map.size.x * this.map.size.y;
-                    
-                    return Math.round(this.player_checked_map / mapsize * 100) ;
-                }
-
-                map_passed(player_position){
-                    if(this.player_passed_map[player_position.y][player_position.x] != 1){
-                        this.player_passed_map[player_position.y][player_position.x] = 1;
-                        this.player_checked_map++;
-                    }
+                    this.gameprogress = 0;
                 }
 
                 Move_Up(){
@@ -110,16 +96,17 @@
             console.log(map.distribution);
             console.log(map.start);
             console.log(map.goal);
+            Init_Event(gameManagement);
             UIdraw(gameManagement);
             Mapdraw(gameManagement);
 
             // キーボード操作時
-            document.addEventListener('keyup', keyup_ivent);
-            function keyup_ivent(e) {
+            document.addEventListener('keyup', keyup_Event);
+            function keyup_Event(e) {
                 if(gameManagement.sceneflag == 'dead'){
                     return;
                 }
-                Move_ivent_before(gameManagement);
+                Move_Event_before(gameManagement);
                 switch (e.key) {
                     case 'ArrowUp':
                         gameManagement.Move_Up();
@@ -136,7 +123,7 @@
                 }
                 Mapdraw(gameManagement);
                 UIdraw(gameManagement);
-                Move_ivent_after(gameManagement);
+                Move_Event_after(gameManagement);
                 return false; 
             }
             // 画面上のボタンで操作時
@@ -144,7 +131,7 @@
                 if(gameManagement.sceneflag == 'dead'){
                     return;
                 }
-                Move_ivent_before(gameManagement);
+                Move_Event_before(gameManagement);
                 switch (value) {
                     case 'UP':
                         gameManagement.Move_Up();
@@ -161,7 +148,7 @@
                 }
                 Mapdraw(gameManagement);
                 UIdraw(gameManagement);
-                Move_ivent_after(gameManagement);
+                Move_Event_after(gameManagement);
                 return false; 
             }
 

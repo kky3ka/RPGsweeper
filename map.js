@@ -57,6 +57,16 @@ class Map {
         return {x:x, y:y};
     }
 
+    set_random_point_all (map_size){
+        // 位置をランダムに決定　すべての場所から
+        let x, y;
+
+        x = Math.floor(Math.random() * (map_size.x));
+        y = Math.floor(Math.random() * (map_size.y));
+        
+        return {x:x, y:y};
+    }
+
     set_goal_point (map_size, mine_list, start_point){
         // ゴール位置を決定　スタート位置と地雷のある場所は選ばれない
         let goal;
@@ -83,6 +93,7 @@ class Map {
         this.size = map_size;
         this.mine_list = this.genelate_list(this.size, event, difficulity_range);
         this.distribution = this.genelate_distribution(this.size, this.mine_list);
+        this.field_passed = this.map_init(this.size);
         this.start = this.set_random_point(this.size, this.mine_list);
         this.goal = this.set_goal_point(this.size, this.mine_list, this.start);
     }
